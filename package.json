@@ -1,0 +1,29 @@
+{
+  "name": "accu360api",
+  "version": "1.0.0",
+  "description": "Creating asimple api which call the thrird party api",
+  "main": "index.js",
+  "engines": {
+    "node" : "20.x"
+  },
+  "scripts": {
+    "start" : "node index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pradeepsingroul/Accu360Api.git"
+  },
+  "author": "Pradeep Singroul",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/pradeepsingroul/Accu360Api/issues"
+  },
+  "homepage": "https://github.com/pradeepsingroul/Accu360Api#readme",
+  "dependencies": {
+    "cookiejar": "^2.1.4",
+    "express": "^4.21.0",
+    "fetch-cookie": "^0.11.0",
+    "node-fetch": "^2.7.0"
+  }
+}
