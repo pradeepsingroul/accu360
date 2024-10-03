@@ -1,8 +1,9 @@
 const express = require('express');
-const fetch = require('node-fetch'); // Ensure you have installed this with `npm install node-fetch`
+const cors = require('cors'); 
 
 const app = express();
 const port = 3232;
+app.use(cors());
 
 async function getInvoices(doctype, fields, start, limit, filters = []) {
     let url = 'https://planetpharma.accu360.cloud/api/resource/Sales Invoice';
