@@ -1,18 +1,43 @@
 const express = require('express');
-const cors = require('cors'); 
+const cors = require('cors');
+const fetch = require('node-fetch'); // Ensure fetch is imported or installed
 
 const app = express();
 const port = 3232;
 app.use(cors());
 
-async function getInvoices(doctype, fields, start, limit, filters = []) {
-    let url = 'https://planetpharma.accu360.cloud/api/resource/Sales Invoice';
-    url += `?fields=${JSON.stringify(fields)}&limit_start=${start}&limit_page_length=${limit}`;
+async function getTotalRecords(doctype, filters) {
+    // This API call fetches just the count of the filtered records
+    let url = `https://planetpharma.accu360.cloud/api/resource/Sales Invoice?fields=["name"]&filters=${filters}&limit_page_length=*`;
+    console.log('Fetching total records URL:', url);
 
-    if (filters.length > 0) {
-        url += `&filters=${encodeURIComponent(JSON.stringify(filters))}`;
+    try {
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `token 2ed5ebc5ece4903:041dee4e4e8c120`
+            }
+        });
+        const data = await response.json();
+
+        if (response.ok) {
+            return data.data.length; // Return the total count based on filters
+        } else {
+            console.error('Error fetching total records:', data);
+            return 0;
+        }
+    } catch (error) {
+        console.error('Error fetching total records:', error.message);
+        return 0;
     }
+}
 
+async function getInvoices(doctype, fields, start, limit, filters) {
+    let url = `https://planetpharma.accu360.cloud/api/resource/Sales Invoice`;
+    url += `?fields=${fields}&limit_start=${start}&limit_page_length=${limit}&filters=${filters}`;
+
+    console.log('Fetching invoices URL:', url);
     try {
         const response = await fetch(url, {
             method: 'GET',
@@ -23,8 +48,10 @@ async function getInvoices(doctype, fields, start, limit, filters = []) {
         });
 
         const data = await response.json();
+
         if (response.ok) {
-            const detailedData = await getData(data.data); // Pass data.data to getData function
+            // Fetch detailed data in parallel for each record
+            const detailedData = await getDataParallel(data.data);
             return { success: true, data: detailedData };
         } else {
             return { success: false, error: data };
@@ -34,59 +61,66 @@ async function getInvoices(doctype, fields, start, limit, filters = []) {
     }
 }
 
-async function getData(data) {
-    let detailedResponses = [];
+// Fetch detailed data for each invoice in parallel
+async function getDataParallel(data) {
+    const promises = data.map(item => {
+        const name = item.name;
+        const url = `https://planetpharma.accu360.cloud/api/resource/Sales Invoice/${name}`;
 
-    for (let key of data) { // Iterate over array of invoices
-        let url = `https://planetpharma.accu360.cloud/api/resource/Sales Invoice/${key.name}`; // Assuming `name` exists
-
-        try {
-            const response = await fetch(url, {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `token 2ed5ebc5ece4903:041dee4e4e8c120`
-                }
-            });
-
-            const dt = await response.json();
-            if (response.ok) {
-                detailedResponses.push(dt.data); 
-            } else {
-                console.error('Error fetching detailed invoice:', dt);
+        return fetch(url, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `token 2ed5ebc5ece4903:041dee4e4e8c120`
             }
-        } catch (error) {
+        })
+        .then(response => response.json())
+        .then(dt => dt.data)
+        .catch(error => {
             console.error('Fetch error:', error.message);
-        }
-    }
+            return null;
+        });
+    });
 
-    return detailedResponses; // Return the array of detailed responses
+    const detailedResponses = await Promise.all(promises);
+    return detailedResponses.filter(response => response !== null);
 }
 
+// Route to get invoices based on pagination
 app.get('/get-invoices', async (req, res) => {
-    const { doctype = 'Sales Invoice', fields = '["*"]', start = 0, length = 10, filters = '[]' } = req.query;
+    const { doctype = 'Sales Invoice', fields = '["*"]', page = 1, length = 100, filters = '[]' } = req.query;
 
-    console.log(`Doctype: ${doctype}, Fields: ${fields}, Start: ${start}, Length: ${length}, Filters: ${filters}`);
+    const parsedFilters = JSON.parse(filters);
+    const parsedFields = JSON.stringify(JSON.parse(fields));
 
-    let parsedFilters;
-    let parsedFields;
+    console.log(`Doctype: ${doctype}, Fields: ${fields}, Page: ${page}, Page Length: ${length}, Filters: ${filters}`);
 
-    try {
-        parsedFilters = JSON.parse(filters);
-    } catch (e) {
-        parsedFilters = [];
+    // Fetch total number of records matching the filters
+    const totalRecords = await getTotalRecords(doctype, filters);
+    console.log('totalRecords', totalRecords);
+
+    if (totalRecords === 0) {
+        return res.status(200).json({ success: true, totalRecords, totalPages: 0, page: parseInt(page), data: [] });
     }
 
-    try {
-        parsedFields = JSON.parse(fields);
-    } catch (e) {
-        parsedFields = ['*'];
-    }
+    // Calculate pagination details
+    const totalPages = Math.ceil(totalRecords / length);
+    const start = (page - 1) * length;
 
-    const listResult = await getInvoices(doctype, parsedFields, start, length, parsedFilters);
+    // Fetch the paginated records
+    const listResult = await getInvoices(doctype, parsedFields, start, length, filters);
 
     if (listResult.success) {
-        res.status(200).json({ success: true, data: listResult.data });
+        const currentPageLength = listResult.data.length; 
+        res.status(200).json({
+            success: true,
+            totalRecords,
+            totalPages,
+            page: parseInt(page),
+            pageLength: parseInt(length),
+            currentPageLength,
+            data: listResult.data
+        });
     } else {
         res.status(401).json({ success: false, error: listResult.error });
     }
