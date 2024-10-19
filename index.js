@@ -205,6 +205,45 @@ app.get('/get-payment', async (req, res) => {
     }
 });
 
+app.get('/get-journal', async (req, res) => {
+    const { doctype = 'Journal Entry', fields = '["*"]', page = 1, length = 100, filters = '[]' } = req.query;
+
+    const parsedFilters = JSON.parse(filters);
+    const parsedFields = JSON.stringify(JSON.parse(fields));
+
+    console.log(`Doctype: ${doctype}, Fields: ${fields}, Page: ${page}, Page Length: ${length}, Filters: ${filters}`);
+
+    // Fetch total number of records matching the filters
+    const totalRecords = await getTotalRecords(doctype, filters);
+    console.log('totalRecords', totalRecords);
+
+    if (totalRecords === 0) {
+        return res.status(200).json({ success: true, totalRecords, totalPages: 0, page: parseInt(page), data: [] });
+    }
+
+    // Calculate pagination details
+    const totalPages = Math.ceil(totalRecords / length);
+    const start = (page - 1) * length;
+
+    // Fetch the paginated records
+    const listResult = await getInvoices(doctype, parsedFields, start, length, filters);
+
+    if (listResult.success) {
+        const currentPageLength = listResult.data.length; 
+        res.status(200).json({
+            success: true,
+            totalRecords,
+            totalPages,
+            page: parseInt(page),
+            pageLength: parseInt(length),
+            currentPageLength,
+            data: listResult.data
+        });
+    } else {
+        res.status(401).json({ success: false, error: listResult.error });
+    }
+});
+
 
 // Home route
 app.get('/', (req, res) => {
