@@ -165,6 +165,54 @@ app.get('/get-chart-of-accounts', async (req, res) => {
     }
 });
 
+app.get('/get-account-details', async (req, res) => {
+    const { doctype = 'Account', name = "", fields = '["*"]', page = 1, length = "*", filters = '[]' } = req.query;
+
+    const parsedFields = JSON.stringify(JSON.parse(fields));
+
+    console.log(`Doctype: ${doctype}, name : ${name} , Fields: ${fields}, Page: ${page}, Page Length: ${length}, Filters: ${filters}`);
+
+    // Fetch the paginated records
+    const listResult = await details(doctype, name ,parsedFields, length, filters);
+
+    if (listResult.success) {
+        res.status(200).json({
+            success: true,
+            account: listResult.account
+        });
+    } else {
+        res.status(401).json({ success: false, error: listResult.error });
+    }
+});
+
+async function details(doctype,name,  fields, start, limit, filters) {
+    let url = `https://planetpharma.accu360.cloud/api/resource/${doctype}/${name}`;
+   
+
+    console.log('Fetching invoices URL:', url);
+    try {
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `token 2ed5ebc5ece4903:041dee4e4e8c120`
+            }
+        });
+
+        const data = await response.json();
+    
+
+        if (response.ok) {
+            return { success: true, account: data.data };
+        } else {
+            return { success: false, error: data };
+        }
+    } catch (error) {
+        return { success: false, error: error.message };
+    }
+}
+
+
 app.get('/get-purchase', async (req, res) => {
     const { doctype = 'Purchase Invoice', fields = '["*"]', page = 1, length = 100, filters = '[]' } = req.query;
 
