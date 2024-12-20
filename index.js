@@ -91,7 +91,7 @@ async function getDataParallel(doctype, data) {
 
 // Route to get invoices based on pagination
 app.get('/get-invoices', async (req, res) => {
-    const { doctype = 'Sales Invoice', fields = '["*"]', page = 1, length = 300, filters = '[]' } = req.query;
+    const { doctype = 'Sales Invoice', fields = '["*"]', page = 1, length = 500, filters = '[]' } = req.query;
 
 
     // Parse query parameters
@@ -223,7 +223,7 @@ async function details(doctype, name, fields, start, limit, filters) {
 
 
 app.get('/get-purchase', async (req, res) => {
-    const { doctype = 'Purchase Invoice', fields = '["*"]', page = 1, length = 300, filters = '[]' } = req.query;
+    const { doctype = 'Purchase Invoice', fields = '["*"]', page = 1, length = 500, filters = '[]' } = req.query;
 
     const parsedFilters = JSON.parse(filters); // User-provided filters
     const defaultFilters = [["status", "!=", "Draft"],["status", "!=", "Cancelled"]]; // Default filters
@@ -267,7 +267,7 @@ app.get('/get-purchase', async (req, res) => {
 });
 
 app.get('/get-payment', async (req, res) => {
-    const { doctype = 'Payment Entry', fields = '["*"]', page = 1, length = 300, filters = '[]' } = req.query;
+    const { doctype = 'Payment Entry', fields = '["*"]', page = 1, length = 500, filters = '[]' } = req.query;
 
     const parsedFilters = JSON.parse(filters); // User-provided filters
     const defaultFilters = [["status", "!=", "Draft"],["status", "!=", "Cancelled"]]; // Default filters
@@ -311,7 +311,7 @@ app.get('/get-payment', async (req, res) => {
 });
 
 app.get('/get-journal', async (req, res) => {
-    const { doctype = 'Journal Entry', fields = '["*"]', page = 1, length = 300, filters = '[]' } = req.query;
+    const { doctype = 'Journal Entry', fields = '["*"]', page = 1, length = 500, filters = '[]' } = req.query;
 
     const parsedFilters = JSON.parse(filters);
     const parsedFields = JSON.stringify(JSON.parse(fields));
