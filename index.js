@@ -144,7 +144,7 @@ app.get('/get-chart-of-accounts', async (req, res) => {
     console.log(`Doctype: ${doctype}, Fields: ${fields}, Page: ${page}, Page Length: ${length}, Filters: ${filters}`);
 
     // Fetch total number of records matching the filters
-    const totalRecords = await getTotalRecords(doctype, filters);
+    const totalRecords = await getForJournal(doctype, filters);
     console.log('totalRecords', totalRecords);
 
     if (totalRecords === 0) {
@@ -156,7 +156,7 @@ app.get('/get-chart-of-accounts', async (req, res) => {
     const start = (page - 1) * length;
 
     // Fetch the paginated records
-    const listResult = await getInvoices(doctype, parsedFields, start, length, combinedFilters);
+    const listResult = await getJournalOneByOne(doctype, parsedFields, start, length, filters);
 
     if (listResult.success) {
         const currentPageLength = listResult.data.length;
