@@ -410,6 +410,7 @@
 const express = require('express');
 const cors = require('cors');
 const fetch = require('node-fetch'); // Ensure fetch is imported or installed
+const axios = require("axios");
 
 const app = express();
 const port = 3232;
@@ -816,6 +817,53 @@ async function getJournalOneByOne(doctype, fields, start, limit, filters) {
         return { success: false, error: error.message };
     }
 }
+
+
+app.get('/login', async (req, res) => {
+
+    const { user, password , url} = req.query;    
+    if (!user || !password || !url) {
+        return res.status(400).json({ error: 'User, password and url are required' });
+    }
+
+    try {
+        const response = await axios.post(url+'/api/method/login', {
+            usr: user,
+            pwd: password
+        });
+
+
+        let data = parseCookies(response.headers['set-cookie'])
+        res.status(200).json({
+            success: true,
+            data :data,
+        });
+        
+    } catch (error) {
+        res.status(400).json({
+            success: true,
+            error: error.message,
+        });
+    }
+});
+
+function parseCookies(cookieArray) {
+    const cookieObject = {};
+
+    cookieArray.forEach(cookie => {
+        // Split the cookie string by semicolon to separate key-value pairs
+        const [cookieKey, cookieValue] = cookie.split(';')[0].split('=');
+        
+        // Trim any spaces and add to the object if the key is in the desired list
+        if (['sid', 'system_user', 'full_name', 'user_id'].includes(cookieKey.trim())) {
+            cookieObject[cookieKey.trim()] = decodeURIComponent(cookieValue);
+        }
+    });
+
+    return cookieObject;
+}
+
+
 
 
 
