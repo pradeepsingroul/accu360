@@ -136,6 +136,53 @@ app.get('/get-invoices', async (req, res) => {
         res.status(401).json({ success: false, error: listResult.error });
     }
 });
+
+app.get('/get-stock-entry', async (req, res) => {
+    const { doctype = 'Stock Entry', fields = '["*"]', page = 1, length = 250, filters = '[]' } = req.query;
+
+
+    // Parse query parameters
+    const parsedFilters = JSON.parse(filters); // User-provided filters
+    const defaultFilters = [["docstatus", "!=", "0"],["status", "!=", "2"]]; // Default filters
+
+    // Combine default filters with user-provided filters
+    const combinedFilters = [...defaultFilters, ...parsedFilters];
+    
+    
+    const parsedFields = JSON.stringify(JSON.parse(fields));
+    console.log(`Doctype: ${doctype}, Fields: ${fields}, Page: ${page}, Page Length: ${length}, Filters: ${combinedFilters}`);
+
+
+    const totalRecords = await getTotalRecords(doctype, combinedFilters);
+    console.log('totalRecords', totalRecords);
+
+    if (totalRecords === 0) {
+        return res.status(200).json({ success: true, totalRecords, totalPages: 0, page: parseInt(page), data: [] });
+    }
+
+    // Calculate pagination details
+    const totalPages = Math.ceil(totalRecords / length);
+    const start = (page - 1) * length;
+
+    // Fetch the paginated records
+    const listResult = await getInvoices(doctype, parsedFields, start, length, combinedFilters);
+
+    if (listResult.success) {
+        const currentPageLength = listResult.data.length;
+        res.status(200).json({
+            success: true,
+            totalRecords,
+            totalPages,
+            page: parseInt(page),
+            pageLength: parseInt(length),
+            currentPageLength,
+            data: listResult.data
+        });
+    } else {
+        res.status(401).json({ success: false, error: listResult.error });
+    }
+});
+
 app.get('/get-chart-of-accounts', async (req, res) => {
     const { doctype = 'Account', fields = '["*"]', page = 1, length = "*", filters = '[]' } = req.query;
 
@@ -847,6 +894,53 @@ async function getForJournalForReddys(doctype, filters) {
         return 0;
     }
 }
+
+app.get('/get-reddys-stock-entry', async (req, res) => {
+    const { doctype = 'Stock Entry', fields = '["*"]', page = 1, length = 250, filters = '[]' } = req.query;
+
+
+    // Parse query parameters
+    const parsedFilters = JSON.parse(filters); // User-provided filters
+    const defaultFilters = [["docstatus", "!=", "0"],["docstatus", "!=", "2"]]; // Default filters
+
+    // Combine default filters with user-provided filters
+    const combinedFilters = [...defaultFilters, ...parsedFilters];
+    
+    
+    const parsedFields = JSON.stringify(JSON.parse(fields));
+    console.log(`Doctype: ${doctype}, Fields: ${fields}, Page: ${page}, Page Length: ${length}, Filters: ${combinedFilters}`);
+
+
+    const totalRecords = await getTotalRecordsforReddys(doctype, combinedFilters);
+    console.log('totalRecords', totalRecords);
+
+    if (totalRecords === 0) {
+        return res.status(200).json({ success: true, totalRecords, totalPages: 0, page: parseInt(page), data: [] });
+    }
+
+    // Calculate pagination details
+    const totalPages = Math.ceil(totalRecords / length);
+    const start = (page - 1) * length;
+
+    // Fetch the paginated records
+    const listResult = await getInvoicesForReddys(doctype, parsedFields, start, length, combinedFilters);
+
+    if (listResult.success) {
+        const currentPageLength = listResult.data.length;
+        res.status(200).json({
+            success: true,
+            totalRecords,
+            totalPages,
+            page: parseInt(page),
+            pageLength: parseInt(length),
+            currentPageLength,
+            data: listResult.data
+        });
+    } else {
+        res.status(401).json({ success: false, error: listResult.error });
+    }
+});
+
 async function getJournalOneByOneForReddys(doctype, fields, start, limit, filters) {
     let url = `https://reddyspharma.accu360.cloud/api/resource/${doctype}`;
     url += `?fields=${fields}&limit_start=${start}&limit_page_length=${limit}&filters=${filters}`;
