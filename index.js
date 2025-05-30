@@ -143,7 +143,7 @@ app.get('/get-stock-entry', async (req, res) => {
 
     // Parse query parameters
     const parsedFilters = JSON.parse(filters); // User-provided filters
-    const defaultFilters = [["docstatus", "!=", "0"],["status", "!=", "2"]]; // Default filters
+     const defaultFilters = [["docstatus", "!=", "0"],["docstatus", "!=", "2"]]; // Default filters
 
     // Combine default filters with user-provided filters
     const combinedFilters = [...defaultFilters, ...parsedFilters];
@@ -189,7 +189,7 @@ app.get('/get-stock-reco', async (req, res) => {
 
     // Parse query parameters
     const parsedFilters = JSON.parse(filters); // User-provided filters
-    const defaultFilters = [["docstatus", "!=", "0"],["status", "!=", "2"]]; // Default filters
+    const defaultFilters = [["docstatus", "!=", "0"],["docstatus", "!=", "2"]]; // Default filters
 
     // Combine default filters with user-provided filters
     const combinedFilters = [...defaultFilters, ...parsedFilters];
